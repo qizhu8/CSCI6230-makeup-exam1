@@ -18,6 +18,8 @@ def is_prime(t):
 def mult_inv_mod_N(a, N):
     if a < 0:
         a %= N
+    if a == 1:
+        return 1
     a, N = np.asarray(a, dtype=np.int64), np.asarray(N, dtype=np.int64)
     AN, Aa = np.array([1, 0], dtype=np.int64), np.array([0, 1], dtype=np.int64)
 
@@ -80,25 +82,35 @@ def eular_totient_function(k):
     return phi
 
 def factorize(k):
-    k = np.round(k)
-    if k < 0:
-        return None
-    if k <= 3:
-        return k
-
+    # k = np.round(k)
+    # if k < 0:
+    #     return None
+    # if k <= 3:
+    #     return k
+    #
+    # factors = []
+    # d = 2
+    # ending_cond = np.sqrt(k)
+    # while  d < ending_cond and k > 1:
+    #     if k % d == 0:
+    #         k /= d
+    #         factors.append(d)
+    #     else:
+    #         if d == 2:
+    #             d -= 1
+    #         d += 2
+    # if k != 1: # not prime
+    #     factors.append(k)
+    raw_factors = [k]
     factors = []
-    d = 2
-    ending_cond = np.sqrt(k)
-    while  d < ending_cond and k > 1:
-        if k % d == 0:
-            k /= d
-            factors.append(d)
+    while len(raw_factors) > 0:
+        num_2b_factorized = raw_factors.pop(0)
+        factor = pollard_rho(num_2b_factorized)
+        if factor == 1 or factor == num_2b_factorized:
+            factors.append(num_2b_factorized)
         else:
-            if d == 2:
-                d -= 1
-            d += 2
-    if k != 1: # not prime
-        factors.append(k)
+            raw_factors.append(factor)
+            raw_factors.append(num_2b_factorized // factor)
     return factors
 
 def exp_mod(a, e, n):
@@ -139,13 +151,16 @@ def miller_rabin_primality_check(n, round_max=100):
     return is_prime
 
 def pollard_rho(n):
-    x, y, d = 2, 2, 1
-    while d == 1:
-        x = (x*x + 1) % n
-        y = (y*y + 1) % n
-        y = (y*y + 1) % n
-        d = gcd(abs(x - y), n)
-        if d == n:
-            return n
-        else:
-            return d
+    x, y = 2, 2
+    cycle_size = 2
+    factor = 1
+
+    while factor == 1:
+        cnt = 1
+        while cnt <= cycle_size and factor <= 1:
+            x = (x*x + 1) % n
+            factor = gcd(x - y, n)
+            cnt += 1
+        cycle_size *= 2
+        y = x
+    return factor
